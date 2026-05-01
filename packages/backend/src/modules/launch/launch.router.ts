@@ -492,7 +492,7 @@ const LANDING_PAGE = `<!DOCTYPE html>
     <h1>Connect OpenClaw to<br/><span>every ad platform</span></h1>
     <p>Automate Facebook Ads, Google Ads, GTM &amp; GA4 through powerful MCP integrations — no manual exports, no data silos.</p>
     <div class="actions">
-      <a href="https://www.picometrics.io/contact" class="btn btn-red">Book a Call</a>
+      <a href="https://www.picometrics.io/contact" class="btn btn-red">Contact us</a>
       <a href="https://www.picometrics.io/services" class="btn btn-outline">Learn More</a>
     </div>
   </section>
@@ -600,7 +600,7 @@ const LANDING_PAGE = `<!DOCTYPE html>
     <h2>Ready to automate your entire ad stack?</h2>
     <p>Talk to the Picometrics team and get your MCP pipeline live in days.</p>
     <div class="actions">
-      <a href="https://www.picometrics.io/contact" class="btn btn-red">Book a Call</a>
+      <a href="https://www.picometrics.io/contact" class="btn btn-red">Contact us</a>
       <a href="https://www.picometrics.io/pricing" class="btn btn-outline">View Pricing</a>
     </div>
   </div>
