@@ -6,19 +6,18 @@ on:
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
 
     steps:
-      - name: Deploy to Azure VM
-        uses: appleboy/ssh-action@v1
-        with:
-          host: 172.190.65.49
-          username: azureuser
-          key: ${{ secrets.DEPLOY_KEY }}
-          script: |
-            cd ~/marketing-ai-platform
-            git pull origin main
-            docker compose build backend
-            docker compose up -d --no-deps backend
-            docker image prune -f
-            curl -sf http://localhost:4000/health || exit 1
+      - name: Pull latest code
+        run: |
+          cd ~/marketing-ai-platform
+          git pull origin main
+
+      - name: Build and restart backend
+        run: |
+          cd ~/marketing-ai-platform
+          docker compose build backend
+          docker compose up -d --no-deps backend
+          docker image prune -f
+          curl -sf http://localhost:4000/health || exit 1
