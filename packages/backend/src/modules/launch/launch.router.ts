@@ -913,7 +913,7 @@ const LOGIN_PAGE = `<!DOCTYPE html>
       <div class="error" id="err"></div>
 
       <div class="card-footer">
-        Need access? <a href="https://www.picometrics.io/contact">Contact Picometrics</a>
+        Need access? <a href="https://www.picometrics.io/contact">Contact us</a>
       </div>
 
     </div>
