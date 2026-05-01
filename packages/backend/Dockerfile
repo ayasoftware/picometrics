@@ -12,6 +12,7 @@ ENV NODE_ENV=production
 COPY package*.json ./
 RUN npm install --omit=dev
 COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/src/favicon.ico ./dist/favicon.ico
 RUN apk add --no-cache curl && addgroup -S appgroup && adduser -S appuser -G appgroup
 USER appuser
 EXPOSE 4000

@@ -4,8 +4,18 @@ import { requireAuth } from "../../middleware/auth";
 import { getLaunchUrl, resolveInjection } from "./launch.service";
 import { config } from "../../config";
 import type { AuthenticatedRequest } from "../../shared/types";
+import { readFileSync } from "fs";
+import { join } from "path";
+
+const FAVICON = readFileSync(join(__dirname, "favicon.ico"));
 
 export const launchRouter = Router();
+
+launchRouter.get("/favicon.ico", (_req: Request, res: Response) => {
+  res.setHeader("Content-Type", "image/x-icon");
+  res.setHeader("Cache-Control", "public, max-age=604800");
+  res.send(FAVICON);
+});
 
 // POST /api/launch — authenticated: returns launchUrl for the user's OpenClaw instance
 launchRouter.post(
@@ -184,6 +194,7 @@ const LANDING_PAGE = `<!DOCTYPE html>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Picometrics — MCP Automation</title>
+  <link rel="icon" href="/favicon.ico" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
@@ -613,6 +624,7 @@ const LOGIN_PAGE = `<!DOCTYPE html>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Sign In — OpenClaw by Picometrics</title>
+  <link rel="icon" href="/favicon.ico" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
