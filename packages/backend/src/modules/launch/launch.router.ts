@@ -885,7 +885,6 @@ const LOGIN_PAGE = `<!DOCTYPE html>
     <div class="card">
 
       <div class="card-header">
-        <h1>Welcome to OpenClaw</h1>
         <p>Sign in to your workspace or create a new account</p>
       </div>
 
