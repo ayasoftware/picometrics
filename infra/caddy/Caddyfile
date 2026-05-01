@@ -12,7 +12,12 @@
 # split routing: /auth/* → backend (token injection), everything else → gateway.
 
 openclaw.picometrics.io {
-  reverse_proxy backend:4000
+  handle /deploy-webhook {
+    reverse_proxy localhost:9001
+  }
+  handle {
+    reverse_proxy backend:4000
+  }
 }
 
 # ── Main marketing-ai app (HTTP) ───────────────────────────────────────────────
