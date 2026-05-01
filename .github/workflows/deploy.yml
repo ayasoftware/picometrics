@@ -14,9 +14,8 @@ jobs:
 
       - name: Log in to Azure Container Registry
         env:
-          ACR_USERNAME: ${{ secrets.ACR_USERNAME }}
           ACR_PASSWORD: ${{ secrets.ACR_PASSWORD }}
-        run: echo "$ACR_PASSWORD" | docker login picometricsacr.azurecr.io -u "$ACR_USERNAME" --password-stdin
+        run: echo "$ACR_PASSWORD" | docker login picometricsacr.azurecr.io -u picometricsacr --password-stdin
 
       - name: Build and push backend image
         run: |
@@ -33,14 +32,13 @@ jobs:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_KEY }}
-          envs: ACR_USERNAME,ACR_PASSWORD
+          envs: ACR_PASSWORD
           script: |
-            echo "$ACR_PASSWORD" | docker login picometricsacr.azurecr.io -u "$ACR_USERNAME" --password-stdin
+            echo "$ACR_PASSWORD" | docker login picometricsacr.azurecr.io -u picometricsacr --password-stdin
             cd ~/marketing-ai-platform
             docker compose pull backend
             docker compose up -d --no-deps backend
             docker image prune -f
             curl -sf http://localhost:4000/health || exit 1
         env:
-          ACR_USERNAME: ${{ secrets.ACR_USERNAME }}
           ACR_PASSWORD: ${{ secrets.ACR_PASSWORD }}
