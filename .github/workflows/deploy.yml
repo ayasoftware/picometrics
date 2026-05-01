@@ -12,6 +12,18 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Diagnose secret access
+        env:
+          ACR_PASSWORD: ${{ secrets.ACR_PASSWORD }}
+        run: |
+          if [ -z "$ACR_PASSWORD" ]; then
+            echo "ERROR: ACR_PASSWORD secret is empty or not accessible"
+            echo "Go to: Settings → Secrets and variables → Actions → Repository secrets"
+            echo "Confirm ACR_PASSWORD exists there (not under Environments)"
+          else
+            echo "OK: ACR_PASSWORD is set (${#ACR_PASSWORD} chars)"
+          fi
+
       - name: Log in to Azure Container Registry
         env:
           ACR_PASSWORD: ${{ secrets.ACR_PASSWORD }}
