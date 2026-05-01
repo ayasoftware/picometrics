@@ -128,6 +128,7 @@ services:
   # ── Backend ────────────────────────────────────────────────────────
 
   backend:
+    image: picometricsacr.azurecr.io/backend:latest
     build:
       context: ./packages/backend
       dockerfile: Dockerfile
