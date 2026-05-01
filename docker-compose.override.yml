@@ -1,0 +1,49 @@
+# Development overrides — applied automatically alongside docker-compose.yml
+version: "3.9"
+
+services:
+  postgres:
+    ports:
+      - "5432:5432"
+
+  redis:
+    ports:
+      - "6379:6379"
+
+  mcp-gtm:
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./packages/mcp-gtm/src:/app/src
+
+  mcp-google-ads:
+    ports:
+      - "3101:3101"
+    volumes:
+      - ./packages/mcp-google-ads/src:/app/src
+
+  mcp-linkedin-ads:
+    ports:
+      - "3102:3102"
+    volumes:
+      - ./packages/mcp-linkedin-ads/src:/app/src
+
+  mcp-facebook-ads:
+    ports:
+      - "3103:3103"
+    volumes:
+      - ./packages/mcp-facebook-ads/src:/app/src
+
+  mcp-google-analytics:
+    ports:
+      - "3104:3104"
+    volumes:
+      - ./packages/mcp-google-analytics/src:/app/src
+
+  backend:
+    ports:
+      - "4000:4000"
+
+  open-webui:
+    ports:
+      - "3000:8080"

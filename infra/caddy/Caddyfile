@@ -1,0 +1,39 @@
+{
+  admin 0.0.0.0:2019 {
+    origins http://caddy:2019 http://localhost:2019
+  }
+  email admin@picometrics.io
+}
+
+# ── OpenClaw portal (login / signup) ──────────────────────────────────────────
+# Routes the root domain to the backend login/signup page.
+# Per-user instance subdomains ({slug}.openclaw.picometrics.io) are added
+# dynamically via the Caddy Admin API when users are provisioned; each has
+# split routing: /auth/* → backend (token injection), everything else → gateway.
+
+openclaw.picometrics.io {
+  reverse_proxy backend:4000
+}
+
+# ── Main marketing-ai app (HTTP) ───────────────────────────────────────────────
+
+:80 {
+  handle /user-settings* {
+    reverse_proxy backend:4000
+  }
+  handle /api/users/* {
+    reverse_proxy backend:4000
+  }
+  handle /api/oauth/* {
+    reverse_proxy backend:4000
+  }
+  handle /v1/* {
+    reverse_proxy backend:4000
+  }
+  handle /health {
+    reverse_proxy backend:4000
+  }
+  handle {
+    reverse_proxy open-webui:8080
+  }
+}

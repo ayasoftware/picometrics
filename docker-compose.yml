@@ -1,0 +1,260 @@
+version: "3.9"
+
+# Network topology:
+#   default              — infra (postgres, redis), backend, mcp servers, open-webui, caddy
+#   openclaw_internal    — backend, caddy, and dynamically-provisioned OpenClaw containers
+#
+# OpenClaw containers are NOT on the default network, so they cannot reach
+# postgres, redis, or other internal services directly.
+# They can reach the backend MCP proxy (http://backend:4000/mcp-proxy) and the
+# internet (required for `npx` package installs at runtime).
+# Port 18789 is never published to the host — Caddy proxies it internally.
+
+services:
+
+  # ── Infrastructure ──────────────────────────────────────────────────
+
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: marketing_ai
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infra/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d marketing_ai"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: redis-server --requirepass ${REDIS_PASSWORD}
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # ── MCP Servers ────────────────────────────────────────────────────
+
+  mcp-gtm:
+    build:
+      context: ./packages/mcp-gtm
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      PORT: 3100
+      NODE_ENV: ${NODE_ENV:-production}
+      INTERNAL_API_SECRET: ${INTERNAL_API_SECRET}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:3100/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+
+  mcp-google-ads:
+    build:
+      context: ./packages/mcp-google-ads
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      PORT: 3101
+      NODE_ENV: ${NODE_ENV:-production}
+      INTERNAL_API_SECRET: ${INTERNAL_API_SECRET}
+      GOOGLE_ADS_DEVELOPER_TOKEN: ${GOOGLE_ADS_DEVELOPER_TOKEN}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:3101/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+
+  mcp-linkedin-ads:
+    build:
+      context: ./packages/mcp-linkedin-ads
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      PORT: 3102
+      NODE_ENV: ${NODE_ENV:-production}
+      INTERNAL_API_SECRET: ${INTERNAL_API_SECRET}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:3102/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+
+  mcp-facebook-ads:
+    build:
+      context: ./packages/mcp-facebook-ads
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      PORT: 3103
+      NODE_ENV: ${NODE_ENV:-production}
+      INTERNAL_API_SECRET: ${INTERNAL_API_SECRET}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:3103/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+
+  mcp-google-analytics:
+    build:
+      context: ./packages/mcp-google-analytics
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      PORT: 3104
+      NODE_ENV: ${NODE_ENV:-production}
+      INTERNAL_API_SECRET: ${INTERNAL_API_SECRET}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:3104/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+
+  # ── Backend ────────────────────────────────────────────────────────
+
+  backend:
+    build:
+      context: ./packages/backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      PORT: 4000
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/marketing_ai
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
+      LLM_PROVIDER: ${LLM_PROVIDER:-openai}
+      LLM_API_KEY: ${LLM_API_KEY}
+      LLM_MODEL: ${LLM_MODEL:-gpt-4o}
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+      JWT_ACCESS_TTL: ${JWT_ACCESS_TTL:-15m}
+      JWT_REFRESH_TTL: ${JWT_REFRESH_TTL:-7d}
+      TOKEN_ENCRYPTION_KEY: ${TOKEN_ENCRYPTION_KEY}
+      INTERNAL_API_SECRET: ${INTERNAL_API_SECRET}
+      OPEN_WEBUI_API_KEY: ${OPEN_WEBUI_API_KEY}
+      WEBUI_SECRET_KEY: ${WEBUI_SECRET_KEY}
+      MCP_GTM_URL: http://mcp-gtm:3100
+      MCP_GOOGLE_ADS_URL: http://mcp-google-ads:3101
+      MCP_LINKEDIN_ADS_URL: http://mcp-linkedin-ads:3102
+      MCP_FACEBOOK_ADS_URL: http://mcp-facebook-ads:3103
+      MCP_GOOGLE_ANALYTICS_URL: http://mcp-google-analytics:3104
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      LINKEDIN_CLIENT_ID: ${LINKEDIN_CLIENT_ID}
+      LINKEDIN_CLIENT_SECRET: ${LINKEDIN_CLIENT_SECRET}
+      FACEBOOK_APP_ID: ${FACEBOOK_APP_ID}
+      FACEBOOK_APP_SECRET: ${FACEBOOK_APP_SECRET}
+      OAUTH_REDIRECT_BASE_URL: ${OAUTH_REDIRECT_BASE_URL:-http://localhost:4000}
+      PROVISIONING_BASE_PORT: ${PROVISIONING_BASE_PORT:-18800}
+      PROVISIONING_DOCKER_SOCKET: /var/run/docker.sock
+      PROVISIONING_BASE_DOMAIN: ${PROVISIONING_BASE_DOMAIN:-openclaw.picometrics.io}
+      PROVISIONING_OPENCLAW_IMAGE: ${PROVISIONING_OPENCLAW_IMAGE:-ghcr.io/openclaw/openclaw:latest}
+      OPENCLAW_DOCKER_NETWORK: marketing-ai-platform_openclaw_internal
+      CADDY_ADMIN_URL: http://caddy:2019
+    group_add:
+      - "999"   # host docker group GID — grants appuser access to /var/run/docker.sock
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - default
+      - openclaw_internal
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      mcp-gtm:
+        condition: service_healthy
+      mcp-google-ads:
+        condition: service_healthy
+      mcp-linkedin-ads:
+        condition: service_healthy
+      mcp-facebook-ads:
+        condition: service_healthy
+      mcp-google-analytics:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:4000/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  # ── Frontend ───────────────────────────────────────────────────────
+
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:latest
+    restart: unless-stopped
+    environment:
+      OPENAI_API_BASE_URL: http://backend:4000/v1
+      OPENAI_API_KEY: ${OPEN_WEBUI_API_KEY}
+      ENABLE_OLLAMA_API: "false"
+      OLLAMA_BASE_URL: ""
+      ENABLE_SIGNUP: "false"
+      WEBUI_SECRET_KEY: ${WEBUI_SECRET_KEY}
+      BYPASS_MODEL_ACCESS_CONTROL: "true"
+    volumes:
+      - open_webui_data:/app/backend/data
+      - ./infra/open-webui/loader.js:/app/backend/open_webui/static/loader.js:ro
+    depends_on:
+      backend:
+        condition: service_healthy
+
+  # ── Reverse Proxy ──────────────────────────────────────────────────
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "2019:2019"
+      - "18800-18899:18800-18899"
+      # Port 18789 (OpenClaw internal gateway) is NOT published here.
+      # Caddy reaches it via the openclaw_internal network by container name.
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./infra/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - default
+      - openclaw_internal
+    depends_on:
+      - open-webui
+      - backend
+
+volumes:
+  postgres_data:
+  redis_data:
+  open_webui_data:
+  caddy_data:
+  caddy_config:
+
+networks:
+  default:
+    name: marketing-ai-platform_default
+  openclaw_internal:
+    name: marketing-ai-platform_openclaw_internal
+    # Not internal:true — OpenClaw containers need internet access to download
+    # npx packages at runtime.  Isolation is enforced by NOT attaching postgres,
+    # redis, or MCP servers to this network.
